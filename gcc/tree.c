@@ -10723,12 +10723,18 @@ build_common_builtin_nodes (void)
   if (!builtin_decl_explicit_p (BUILT_IN_PROFILE_FUNC_ENTER)
       || !builtin_decl_explicit_p (BUILT_IN_PROFILE_FUNC_EXIT))
     {
-      ftype = build_function_type_list (void_type_node, ptr_type_node,
+      if ( !flag_instrument_function_entry_exit_minimal )
+        ftype = build_function_type_list (void_type_node, ptr_type_node,
+					ptr_type_node, NULL_TREE);
+      else
+        ftype = build_function_type_list (void_type_node,
 					ptr_type_node, NULL_TREE);
       if (!builtin_decl_explicit_p (BUILT_IN_PROFILE_FUNC_ENTER))
 	local_define_builtin ("__cyg_profile_func_enter", ftype,
 			      BUILT_IN_PROFILE_FUNC_ENTER,
 			      "__cyg_profile_func_enter", 0);
+      if ( flag_instrument_function_entry_exit_minimal )
+        ftype = build_function_type_list (void_type_node, NULL_TREE);
       if (!builtin_decl_explicit_p (BUILT_IN_PROFILE_FUNC_EXIT))
 	local_define_builtin ("__cyg_profile_func_exit", ftype,
 			      BUILT_IN_PROFILE_FUNC_EXIT,

@@ -15088,20 +15088,29 @@ gimplify_function_tree (tree fndecl)
       tree tmp_var, this_fn_addr;
       gcall *call;
 
-      /* The instrumentation hooks aren't going to call the instrumented
-	 function and the address they receive is expected to be matchable
-	 against symbol addresses.  Make sure we don't create a trampoline,
-	 in case the current function is nested.  */
-      this_fn_addr = build_fold_addr_expr (current_function_decl);
-      TREE_NO_TRAMPOLINE (this_fn_addr) = 1;
+      if ( !flag_instrument_function_entry_exit_minimal )
+        {
+          /* The instrumentation hooks aren't going to call the instrumented
+	     function and the address they receive is expected to be matchable
+	     against symbol addresses.  Make sure we don't create a trampoline,
+	     in case the current function is nested.  */
+          this_fn_addr = build_fold_addr_expr (current_function_decl);
+          TREE_NO_TRAMPOLINE (this_fn_addr) = 1;
 
-      x = builtin_decl_implicit (BUILT_IN_RETURN_ADDRESS);
-      call = gimple_build_call (x, 1, integer_zero_node);
-      tmp_var = create_tmp_var (ptr_type_node, "return_addr");
-      gimple_call_set_lhs (call, tmp_var);
-      gimplify_seq_add_stmt (&cleanup, call);
-      x = builtin_decl_implicit (BUILT_IN_PROFILE_FUNC_EXIT);
-      call = gimple_build_call (x, 2, this_fn_addr, tmp_var);
+          x = builtin_decl_implicit (BUILT_IN_RETURN_ADDRESS);
+          call = gimple_build_call (x, 1, integer_zero_node);
+          tmp_var = create_tmp_var (ptr_type_node, "return_addr");
+          gimple_call_set_lhs (call, tmp_var);
+          gimplify_seq_add_stmt (&cleanup, call);
+          x = builtin_decl_implicit (BUILT_IN_PROFILE_FUNC_EXIT);
+          call = gimple_build_call (x, 2, this_fn_addr, tmp_var);
+        }
+      else
+        {
+          x = builtin_decl_implicit (BUILT_IN_PROFILE_FUNC_EXIT);
+          call = gimple_build_call (x, 0);
+        }
+
       gimplify_seq_add_stmt (&cleanup, call);
       tf = gimple_build_try (seq, cleanup, GIMPLE_TRY_FINALLY);
 
@@ -15111,7 +15120,12 @@ gimplify_function_tree (tree fndecl)
       gimple_call_set_lhs (call, tmp_var);
       gimplify_seq_add_stmt (&body, call);
       x = builtin_decl_implicit (BUILT_IN_PROFILE_FUNC_ENTER);
-      call = gimple_build_call (x, 2, this_fn_addr, tmp_var);
+
+      if ( !flag_instrument_function_entry_exit_minimal )
+        call = gimple_build_call (x, 2, this_fn_addr, tmp_var);
+      else
+        call = gimple_build_call (x, 1, tmp_var);
+
       gimplify_seq_add_stmt (&body, call);
       gimplify_seq_add_stmt (&body, tf);
       new_bind = gimple_build_bind (NULL, body, NULL);

@@ -1801,6 +1801,10 @@ finstrument-functions
 Common Report Var(flag_instrument_function_entry_exit)
 Instrument function entry and exit with profiling calls.
 
+finstrument-functions-minimal
+Common Report Var(flag_instrument_function_entry_exit_minimal)
+Use minimal overhead function signature for instrument function entry and exit profiling calls.
+
 finstrument-functions-exclude-function-list=
 Common RejectNegative Joined
 -finstrument-functions-exclude-function-list=name,...	Do not instrument listed functions.
