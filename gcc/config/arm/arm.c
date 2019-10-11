@@ -1028,6 +1028,9 @@ const int arm_arch_cde_coproc_bits[] = {
   0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80
 };
 
+/* Preferred alignment for stack boundary in bits.  */
+unsigned int arm_preferred_stack_boundary;
+
 /* The condition codes of the ARM, and the inverse function.  */
 static const char * const arm_condition_codes[] =
 {
@@ -3149,6 +3152,27 @@ arm_option_override_internal (struct gcc_options *opts,
      This will apply to ARM and Thumb1 eventually.  */
   if (TARGET_THUMB2_P (opts->x_target_flags))
     opts->x_inline_asm_unified = true;
+
+  arm_preferred_stack_boundary = PREFERRED_STACK_BOUNDARY_DEFAULT;
+  if (opts_set->x_arm_preferred_stack_boundary_arg)
+    {
+      int min = 2;
+      int max = 3;
+
+      if (opts->x_arm_preferred_stack_boundary_arg < min
+          || opts->x_arm_preferred_stack_boundary_arg > max)
+        {
+          if (min == max)
+            error ("%<-mpreferred-stack-boundary%> is not supported "
+                   "for this target");
+          else
+            error ("%<-mpreferred-stack-boundary=%d%> is not between %d and %d",
+                   opts->x_arm_preferred_stack_boundary_arg, min, max);
+        }
+      else
+        arm_preferred_stack_boundary
+          = (1 << opts->x_arm_preferred_stack_boundary_arg) * BITS_PER_UNIT;
+    }
 
 #ifdef SUBTARGET_OVERRIDE_INTERNAL_OPTIONS
   SUBTARGET_OVERRIDE_INTERNAL_OPTIONS;
@@ -22645,10 +22669,10 @@ arm_compute_frame_layout (void)
     }
 
   /* Ensure SFP has the correct alignment.  */
-  if (ARM_DOUBLEWORD_ALIGN
-      && (offsets->soft_frame & 7))
+  int mask = arm_preferred_stack_boundary/BITS_PER_UNIT-1;
+  if ( offsets->soft_frame & mask )
     {
-      offsets->soft_frame += 4;
+      offsets->soft_frame = (offsets->soft_frame+mask)&~mask;
       /* Try to align stack by pushing an extra reg.  Don't bother doing this
          when there is a stack frame as the alignment will be rolled into
 	 the normal stack adjustment.  */
@@ -22710,12 +22734,11 @@ arm_compute_frame_layout (void)
   offsets->outgoing_args = (offsets->locals_base
 			    + crtl->outgoing_args_size);
 
-  if (ARM_DOUBLEWORD_ALIGN)
+  if (offsets->outgoing_args & mask)
     {
       /* Ensure SP remains doubleword aligned.  */
-      if (offsets->outgoing_args & 7)
-	offsets->outgoing_args += 4;
-      gcc_assert (!(offsets->outgoing_args & 7));
+      offsets->outgoing_args = (offsets->outgoing_args+mask)&~mask;
+      gcc_assert (!(offsets->outgoing_args & mask));
     }
 }
 

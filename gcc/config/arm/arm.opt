@@ -301,3 +301,11 @@ Generate code which uses the core registers only (r0-r14).
 mfdpic
 Target Report Mask(FDPIC)
 Enable Function Descriptor PIC mode.
+
+;; -mpreferred-stack-boundary=
+TargetSave
+int x_arm_preferred_stack_boundary_arg
+
+mpreferred-stack-boundary=
+Target RejectNegative Joined UInteger Var(arm_preferred_stack_boundary_arg)
+Attempt to keep stack aligned to this power of 2.

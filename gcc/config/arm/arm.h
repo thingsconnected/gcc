@@ -590,6 +590,9 @@ extern const int arm_arch_cde_coproc_bits[];
 #define ARM_MVE_CDE_CONST_2	((1 << 7 ) - 1)
 #define ARM_MVE_CDE_CONST_3	((1 << 4 ) - 1)
 
+/* Preferred alignment for stack boundary in bits.  */
+extern unsigned int arm_preferred_stack_boundary;
+
 #ifndef TARGET_DEFAULT
 #define TARGET_DEFAULT  (MASK_APCS_FRAME)
 #endif
@@ -659,16 +662,21 @@ extern const int arm_arch_cde_coproc_bits[];
 #define UNITS_PER_WORD	4
 
 /* True if natural alignment is used for doubleword types.  */
-#define ARM_DOUBLEWORD_ALIGN	TARGET_AAPCS_BASED
+/* We abuse the -mpreferred-stack-boundary flag to also unset ARM_DOUBLEWORD_ALIGN */
+#define ARM_DOUBLEWORD_ALIGN_DEFAULT	(TARGET_AAPCS_BASED)
+#define ARM_DOUBLEWORD_ALIGN	(arm_preferred_stack_boundary==64 && ARM_DOUBLEWORD_ALIGN_DEFAULT)
 
 #define DOUBLEWORD_ALIGNMENT 64
 
 #define PARM_BOUNDARY  	32
 
 #define STACK_BOUNDARY  (ARM_DOUBLEWORD_ALIGN ? DOUBLEWORD_ALIGNMENT : 32)
+#define STACK_BOUNDARY_DEFAULT  (ARM_DOUBLEWORD_ALIGN_DEFAULT ? DOUBLEWORD_ALIGNMENT : 32)
 
-#define PREFERRED_STACK_BOUNDARY \
-    (arm_abi == ARM_ABI_ATPCS ? 64 : STACK_BOUNDARY)
+#define PREFERRED_STACK_BOUNDARY_DEFAULT \
+    (arm_abi == ARM_ABI_ATPCS ? 64 : STACK_BOUNDARY_DEFAULT)
+
+#define PREFERRED_STACK_BOUNDARY arm_preferred_stack_boundary
 
 #define FUNCTION_BOUNDARY_P(flags)  (TARGET_THUMB_P (flags) ? 16 : 32)
 #define FUNCTION_BOUNDARY           (FUNCTION_BOUNDARY_P (target_flags))
