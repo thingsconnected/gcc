@@ -2836,6 +2836,7 @@ shorten_compare (location_t loc, tree *op0_ptr, tree *op1_ptr,
       /* 1 if comparison is nominally unsigned.  */
       int unsignedp = TYPE_UNSIGNED (*restype_ptr);
       tree val;
+      int could_compare_equality = 0;
 
       type = c_common_signed_or_unsigned_type (unsignedp0,
 					       TREE_TYPE (primop0));
@@ -2892,6 +2893,7 @@ shorten_compare (location_t loc, tree *op0_ptr, tree *op1_ptr,
 	    val = truthvalue_true_node;
 	  if (!max_gt)
 	    val = truthvalue_false_node;
+          if ( !min_lt ) could_compare_equality = 1;
 	}
       else if (code == LE_EXPR)
 	{
@@ -2899,6 +2901,7 @@ shorten_compare (location_t loc, tree *op0_ptr, tree *op1_ptr,
 	    val = truthvalue_true_node;
 	  if (min_gt)
 	    val = truthvalue_false_node;
+          if ( !min_lt ) could_compare_equality = 1;
 	}
       else if (code == GE_EXPR)
 	{
@@ -2954,6 +2957,9 @@ shorten_compare (location_t loc, tree *op0_ptr, tree *op1_ptr,
 	  if (val == truthvalue_true_node)
 	    warning_at (loc, OPT_Wtype_limits,
 			"comparison is always true due to limited range of data type");
+          if (val == 0 && could_compare_equality )
+            warning_at (loc, OPT_Wtype_limits,
+                        "comparison could test equality for clarity, due to limited range of data type");
 	}
 
       if (val != 0)
@@ -3047,6 +3053,20 @@ shorten_compare (location_t loc, tree *op0_ptr, tree *op1_ptr,
 	  
 	  switch (code)
 	    {
+	    case GT_EXPR:
+	      if (warn)
+		warning_at (loc, OPT_Wtype_limits,
+			    "comparison of unsigned expression in %<> 0%> "
+			    "should test for inequality instead");
+	      break;
+
+	    case LE_EXPR:
+	      if (warn)
+		warning_at (loc, OPT_Wtype_limits,
+			    "comparison of unsigned expression in %<<= 0%> "
+			    "should test for equality instead");
+	      break;
+
 	    case GE_EXPR:
 	      if (warn)
 		warning_at (loc, OPT_Wtype_limits,
